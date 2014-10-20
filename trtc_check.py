@@ -18,7 +18,7 @@ import sys
 
 
 class Trtc:
-    def __init__(self, pir = None, pbs = None, cir = None, cbs = None):
+    def __init__(self, pir=None, pbs=None, cir=None, cbs=None):
         if pir is not None:
             self.pir = pir
 
@@ -35,7 +35,6 @@ class Trtc:
         self.tc = self.cbs
         self.time = 0
 
-
     def token_buckets_update(self, arrive_time):
         unit_second = 1000
         if arrive_time - self.time >= unit_second:
@@ -50,11 +49,12 @@ class Trtc:
                 self.tc = self.tc + self.cir
             self.time = self.time + unit_second
 
-
     def metering(self, packet_size):
+        if packet_size < 64:
+            return "error"
         if self.tp - packet_size < 0:
             color = "red"
-        if self.tc - packet_size < 0:
+        elif self.tc - packet_size < 0:
             color = "yellow"
             self.tp = self.tp - packet_size
         else:
@@ -64,8 +64,8 @@ class Trtc:
 
         return color
 
-    def check(self, arrive_time = None, packet_size = None, trtc_color = None,
-              trtc_tp = 0, trtc_tc = 0):
+    def check(self, arrive_time=None, packet_size=None, trtc_color=None,
+              trtc_tp=0, trtc_tc=0):
 
         error_print = 0
 
@@ -80,7 +80,6 @@ class Trtc:
             print "color not match"
             error_print = 1
 
-
         if (self.tp != trtc_tp) or (self.tc != trtc_tc):
             print "token buckets not match"
             error_print = 1
@@ -92,12 +91,13 @@ class Trtc:
             print "check_tp: %d" % self.tp
             print "trtc_tc:  %d" % trtc_tc
             print "check_tc: %d" % self.tc
-            sys.exit()
+            return -1
 
         return 0
 
-def main(file_name = None, pir = None, pbs = None, cir = None, cbs = None):
-    trtc = Trtc(pir = pir, pbs = pbs, cir = cir, cbs = cbs)
+
+def main(file_name=None, pir=None, pbs=None, cir=None, cbs=None):
+    trtc = Trtc(pir=pir, pbs=pbs, cir=cir, cbs=cbs)
     trtc_file = open(file_name, 'r')
     # skip first line
     line = trtc_file.readline()
@@ -108,22 +108,24 @@ def main(file_name = None, pir = None, pbs = None, cir = None, cbs = None):
         line_list = re.findall(r"[\w']+", line)
         # assign parameters
         arrive_time = int(line_list[0], 10)
-        index = int(line_list[1], 10)
+        # index = int(line_list[1], 10)
         packet_size = int(line_list[2], 10)
         trtc_color = line_list[3]
         trtc_tp = int(line_list[4], 10)
         trtc_tc = int(line_list[5], 10)
-        ret = trtc.check(arrive_time = arrive_time, packet_size = packet_size,
-                         trtc_color = trtc_color, trtc_tp = trtc_tp,
-                         trtc_tc = trtc_tc)
+        ret = trtc.check(arrive_time=arrive_time, packet_size=packet_size,
+                         trtc_color=trtc_color, trtc_tp=trtc_tp,
+                         trtc_tc=trtc_tc)
         if ret < 0:
             break
 
     print "PASS"
+
+
 def args_parser():
     parser = argparse.ArgumentParser(description='Trtc function check.')
     # option
-    parser.add_argument('-version','-v', action='version',
+    parser.add_argument('-version', '-v', action='version',
                         version='%(prog)s 1.0.0')
     # must
     parser.add_argument('trtc_file', metavar='trtc_file', type=str, nargs=1,
@@ -140,11 +142,8 @@ def args_parser():
     return args
 
 
-
-
-
 if __name__ == '__main__':
     args = args_parser()
-    main(file_name = args.trtc_file[0], pir = args.pir[0], pbs = args.pbs[0],
-         cir = args.cir[0], cbs = args.cbs[0])
+    main(file_name=args.trtc_file[0], pir=args.pir[0], pbs=args.pbs[0],
+         cir=args.cir[0], cbs=args.cbs[0])
     sys.exit()
